@@ -8,6 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, Package, BookOpen, Plus, List, Edit, LogOut, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,6 +56,14 @@ export default function Profile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [lendingItems, setLendingItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [guidelinesOpen, setGuidelinesOpen] = useState(false);
+  
+  // Edit form state
+  const [editFullName, setEditFullName] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editDormArea, setEditDormArea] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -102,6 +115,49 @@ export default function Profile() {
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const handleEditProfile = () => {
+    setEditFullName(profile?.full_name || '');
+    setEditBio(profile?.bio || '');
+    setEditDormArea(profile?.dorm_area || '');
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editFullName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editFullName,
+          bio: editBio,
+          dorm_area: editDormArea
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      setProfile({
+        ...profile!,
+        full_name: editFullName,
+        bio: editBio,
+        dorm_area: editDormArea
+      });
+
+      toast.success('Profile updated successfully!');
+      setEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -180,7 +236,7 @@ export default function Profile() {
                 <List className="h-4 w-4 mr-2" />
                 View Listings
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleEditProfile}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
@@ -307,13 +363,150 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Learn how to be a responsible borrower and lender in the Buckeye Borrow community.
                 </p>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setGuidelinesOpen(true)}>
                   Read Guidelines
                 </Button>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Profile Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+              <DialogDescription>
+                Update your profile information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dormArea">Campus Area</Label>
+                <Select value={editDormArea} onValueChange={setEditDormArea}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select campus area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="North Campus">North Campus</SelectItem>
+                    <SelectItem value="South Campus">South Campus</SelectItem>
+                    <SelectItem value="West Campus">West Campus</SelectItem>
+                    <SelectItem value="Off-Campus">Off-Campus</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bio">About Me</Label>
+                <Textarea
+                  id="bio"
+                  value={editBio}
+                  onChange={(e) => setEditBio(e.target.value)}
+                  placeholder="Tell us a bit about yourself (optional)"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveProfile} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Guidelines Dialog */}
+        <Dialog open={guidelinesOpen} onOpenChange={setGuidelinesOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Borrowing Etiquette & Safety Tips</DialogTitle>
+              <DialogDescription>
+                Guidelines for a safe and respectful borrowing experience
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  For Borrowers
+                </h3>
+                <ul className="space-y-2 text-sm text-muted-foreground ml-7">
+                  <li>• Always treat borrowed items with care and respect</li>
+                  <li>• Return items on time and in the same condition you received them</li>
+                  <li>• Communicate clearly about pickup and return arrangements</li>
+                  <li>• Report any damage immediately and offer to cover repair costs</li>
+                  <li>• Leave honest feedback about your borrowing experience</li>
+                  <li>• Meet in well-lit, public campus locations for exchanges</li>
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  For Lenders
+                </h3>
+                <ul className="space-y-2 text-sm text-muted-foreground ml-7">
+                  <li>• Only lend items you're comfortable parting with temporarily</li>
+                  <li>• Be clear about condition, expectations, and return dates</li>
+                  <li>• Take photos of the item before lending</li>
+                  <li>• Verify the borrower's OSU email and profile</li>
+                  <li>• Respond promptly to borrowing requests</li>
+                  <li>• Be understanding if minor issues arise</li>
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  Safety Guidelines
+                </h3>
+                <ul className="space-y-2 text-sm text-muted-foreground ml-7">
+                  <li>• Always meet in public, well-lit areas on campus</li>
+                  <li>• Let a friend know about your meeting arrangements</li>
+                  <li>• Verify the person's identity matches their profile</li>
+                  <li>• Trust your instincts - if something feels off, cancel</li>
+                  <li>• Never share sensitive personal information</li>
+                  <li>• Report suspicious activity or violations immediately</li>
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm font-medium mb-2">Need Help?</p>
+                <p className="text-sm text-muted-foreground">
+                  If you experience any issues or have concerns about a transaction,
+                  please contact our support team. We're here to help maintain a safe
+                  and trustworthy community for all Buckeyes.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setGuidelinesOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
