@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { SearchBar } from "@/components/SearchBar";
+import { SearchBar, FilterOptions } from "@/components/SearchBar";
 import { ItemGrid } from "@/components/ItemGrid";
 import { ItemDetailsPanel } from "@/components/ItemDetailsPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,12 @@ const Index = () => {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    campusArea: "all",
+    costType: "all",
+    status: "all",
+    maxBorrowDuration: "all"
+  });
 
   const handleItemClick = (itemId: string) => {
     setSelectedItemId(itemId);
@@ -42,11 +48,14 @@ const Index = () => {
           onSearchChange={setSearchQuery}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
+          filters={filters}
+          onFiltersChange={setFilters}
           expanded={searchExpanded}
         />
         <ItemGrid 
           searchQuery={searchQuery}
           selectedCategory={selectedCategory}
+          filters={filters}
           onItemClick={handleItemClick}
         />
       </div>
