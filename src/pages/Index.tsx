@@ -33,21 +33,23 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <div className={`transition-all duration-700 ease-in-out ${searchExpanded ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+      <div className={`transition-all duration-700 ease-in-out overflow-hidden ${searchExpanded ? 'max-h-0 opacity-0' : 'max-h-[600px] opacity-100'}`}>
         <Hero onSearchClick={() => setSearchExpanded(true)} />
       </div>
-      <SearchBar 
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        expanded={searchExpanded}
-      />
-      <ItemGrid 
-        searchQuery={searchQuery}
-        selectedCategory={selectedCategory}
-        onItemClick={handleItemClick}
-      />
+      <div className={`transition-all duration-700 ease-in-out ${searchExpanded ? 'mt-0' : ''}`}>
+        <SearchBar 
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          expanded={searchExpanded}
+        />
+        <ItemGrid 
+          searchQuery={searchQuery}
+          selectedCategory={selectedCategory}
+          onItemClick={handleItemClick}
+        />
+      </div>
       <ItemDetailsPanel
         itemId={selectedItemId}
         open={detailsPanelOpen}

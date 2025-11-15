@@ -54,8 +54,8 @@ export const SearchBar = ({
   };
 
   return (
-    <div className={`sticky z-40 bg-background transition-all duration-700 ease-in-out ${
-      expanded ? 'top-0 border-b shadow-lg' : 'top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b'
+    <div className={`z-40 bg-background transition-all duration-700 ease-in-out border-b ${
+      expanded ? 'sticky top-0 shadow-lg' : 'sticky top-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'
     }`}>
       <div className="container mx-auto max-w-6xl py-4 px-4">
         <div className="flex flex-col gap-4">
