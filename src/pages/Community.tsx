@@ -84,17 +84,27 @@ export default function Community() {
         },
         async (payload) => {
           // Fetch the comment with profile data
-          const { data } = await supabase
+          const { data: commentData } = await supabase
             .from('request_comments')
-            .select(`
-              *,
-              profiles!request_comments_commenter_id_fkey (full_name)
-            `)
+            .select('*')
             .eq('id', payload.new.id)
             .single();
-          
-          if (data) {
-            setComments((prev) => [...prev, data as any]);
+
+          if (commentData) {
+            // Fetch commenter profile
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', commentData.commenter_id)
+              .single();
+
+            setComments((prev) => [
+              ...prev,
+              {
+                ...commentData,
+                profiles: { full_name: profileData?.full_name || 'Unknown' },
+              } as any,
+            ]);
           }
         }
       )
@@ -106,39 +116,65 @@ export default function Community() {
   }, [selectedRequest]);
 
   const fetchRequests = async () => {
-    const { data, error } = await supabase
+    // Fetch requests with requester profile
+    const { data: requestsData, error: requestsError } = await supabase
       .from('requests')
-      .select(`
-        *,
-        profiles:requester_id (full_name)
-      `)
+      .select('*')
       .eq('status', 'open')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false});
 
-    if (error) {
+    if (requestsError) {
       toast.error('Failed to load requests');
       return;
     }
 
-    setRequests(data as Request[]);
+    // Fetch profiles for requesters
+    const requesterIds = requestsData?.map((r) => r.requester_id) || [];
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', requesterIds);
+
+    // Merge data
+    const requestsWithProfiles = requestsData?.map((req) => ({
+      ...req,
+      profiles: {
+        full_name: profilesData?.find((p) => p.id === req.requester_id)?.full_name || 'Unknown',
+      },
+    }));
+
+    setRequests(requestsWithProfiles as any);
   };
 
   const fetchComments = async (requestId: string) => {
-    const { data, error } = await supabase
+    // Fetch comments
+    const { data: commentsData, error: commentsError } = await supabase
       .from('request_comments')
-      .select(`
-        *,
-        profiles:commenter_id (full_name)
-      `)
+      .select('*')
       .eq('request_id', requestId)
       .order('created_at', { ascending: true });
 
-    if (error) {
+    if (commentsError) {
       toast.error('Failed to load comments');
       return;
     }
 
-    setComments(data as Comment[]);
+    // Fetch profiles for commenters
+    const commenterIds = commentsData?.map((c) => c.commenter_id) || [];
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', commenterIds);
+
+    // Merge data
+    const commentsWithProfiles = commentsData?.map((comment) => ({
+      ...comment,
+      profiles: {
+        full_name: profilesData?.find((p) => p.id === comment.commenter_id)?.full_name || 'Unknown',
+      },
+    }));
+
+    setComments(commentsWithProfiles as any);
   };
 
   const handleCreateRequest = async (e: React.FormEvent) => {
@@ -148,13 +184,14 @@ export default function Community() {
     try {
       const { data, error } = await supabase
         .from('requests')
-        .insert({
-          requester_id: user?.id,
+        .insert([{
           item_name: itemName,
           needed_by_date: neededByDate,
           purpose: purpose,
           additional_details: additionalDetails,
-        })
+          requester_id: user?.id,
+          request_number: '',
+        }])
         .select()
         .single();
 
@@ -183,12 +220,12 @@ export default function Community() {
     try {
       const { error } = await supabase
         .from('request_comments')
-        .insert({
+        .insert([{
           request_id: selectedRequest.id,
           commenter_id: user?.id,
           comment_text: commentText,
           listing_number: listingNumber || null,
-        });
+        }]);
 
       if (error) throw error;
 
