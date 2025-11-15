@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ListItem from "./pages/ListItem";
 import MyItems from "./pages/MyItems";
+import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/list-item" element={<ListItem />} />
             <Route path="/my-items" element={<MyItems />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/community" element={<Community />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

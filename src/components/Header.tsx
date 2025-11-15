@@ -98,7 +98,7 @@ export const Header = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/my-items')}>My Listings</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
