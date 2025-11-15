@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      borrow_requests: {
+        Row: {
+          agreed_to_guidelines: boolean
+          contact_phone: string
+          created_at: string
+          id: string
+          item_id: string
+          needed_from: string
+          needed_until: string
+          purpose: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agreed_to_guidelines?: boolean
+          contact_phone: string
+          created_at?: string
+          id?: string
+          item_id: string
+          needed_from: string
+          needed_until: string
+          purpose: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agreed_to_guidelines?: boolean
+          contact_phone?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          needed_from?: string
+          needed_until?: string
+          purpose?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "borrow_requests_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           borrower_expectations: string | null

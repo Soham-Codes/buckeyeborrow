@@ -6,8 +6,10 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Package } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Package, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Item {
@@ -23,11 +25,29 @@ interface Item {
   item_number: string;
 }
 
+interface BorrowRequest {
+  id: string;
+  needed_from: string;
+  needed_until: string;
+  purpose: string;
+  contact_phone: string;
+  status: string;
+  created_at: string;
+  requester: {
+    full_name: string;
+  };
+}
+
 export default function MyItems() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
+  const [requestCounts, setRequestCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [itemRequests, setItemRequests] = useState<BorrowRequest[]>([]);
+  const [requestsDialogOpen, setRequestsDialogOpen] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,12 +71,80 @@ export default function MyItems() {
 
       if (error) throw error;
       setItems(data || []);
+
+      // Fetch request counts for each item
+      if (data && data.length > 0) {
+        await fetchRequestCounts(data.map(item => item.id));
+      }
     } catch (error) {
       console.error('Error fetching items:', error);
       toast.error('Failed to load your items');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRequestCounts = async (itemIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('borrow_requests')
+        .select('item_id')
+        .in('item_id', itemIds)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      data?.forEach(request => {
+        counts[request.item_id] = (counts[request.item_id] || 0) + 1;
+      });
+
+      setRequestCounts(counts);
+    } catch (error) {
+      console.error('Error fetching request counts:', error);
+    }
+  };
+
+  const fetchItemRequests = async (itemId: string) => {
+    setLoadingRequests(true);
+    try {
+      const { data, error } = await supabase
+        .from('borrow_requests')
+        .select('*')
+        .eq('item_id', itemId)
+        .order('created_at', { ascending: false});
+
+      if (error) throw error;
+
+      // Fetch requester profiles
+      const requestsWithProfiles = await Promise.all(
+        (data || []).map(async (request) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', request.requester_id)
+            .single();
+
+          return {
+            ...request,
+            requester: { full_name: profile?.full_name || 'Unknown User' }
+          };
+        })
+      );
+
+      setItemRequests(requestsWithProfiles);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      toast.error('Failed to load requests');
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const handleViewRequests = (item: Item) => {
+    setSelectedItem(item);
+    fetchItemRequests(item.id);
+    setRequestsDialogOpen(true);
   };
 
   const handleDelete = async (itemId: string) => {
@@ -145,6 +233,16 @@ export default function MyItems() {
                       <p className="text-xs text-muted-foreground text-center">Item Number</p>
                       <p className="text-lg font-bold text-primary text-center tracking-wider">{item.item_number}</p>
                     </div>
+
+                    {/* Request Count Badge */}
+                    {requestCounts[item.id] > 0 && (
+                      <div className="mb-4 flex items-center justify-center gap-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                        <Inbox className="h-4 w-4 text-green-600" />
+                        <p className="text-sm font-medium text-green-700">
+                          {requestCounts[item.id]} pending {requestCounts[item.id] === 1 ? 'request' : 'requests'}
+                        </p>
+                      </div>
+                    )}
                     
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <p><strong>Campus Area:</strong> {item.campus_area}</p>
@@ -154,11 +252,22 @@ export default function MyItems() {
                         Listed on {new Date(item.created_at).toLocaleDateString()}
                       </p>
                     </div>
+
+                    {/* View Requests Button */}
+                    <Button 
+                      variant="outline" 
+                      className="w-full mb-2" 
+                      size="sm"
+                      onClick={() => handleViewRequests(item)}
+                    >
+                      <Inbox className="w-4 h-4 mr-2" />
+                      View Requests {requestCounts[item.id] > 0 && `(${requestCounts[item.id]})`}
+                    </Button>
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="w-full" size="sm">
-                          <Trash2 className="w-4 h-4 mr-2" />
+                          <Trash2 className="w-4 w-4 mr-2" />
                           Delete Item
                         </Button>
                       </AlertDialogTrigger>
@@ -188,6 +297,69 @@ export default function MyItems() {
           )}
         </div>
       </div>
+
+      {/* Requests Dialog */}
+      <Dialog open={requestsDialogOpen} onOpenChange={setRequestsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Borrow Requests for "{selectedItem?.item_name}"</DialogTitle>
+            <DialogDescription>
+              Review and manage borrow requests for this item
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingRequests ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : itemRequests.length === 0 ? (
+            <div className="text-center py-8">
+              <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No requests yet for this item</p>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {itemRequests.map((request) => (
+                <Card key={request.id} className="border-2">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{request.requester.full_name}</CardTitle>
+                        <CardDescription>
+                          Requested on {new Date(request.created_at).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={request.status === 'pending' ? 'default' : 'secondary'}>
+                        {request.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Needed Period</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(request.needed_from).toLocaleDateString()} - {new Date(request.needed_until).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm font-medium">Purpose</p>
+                        <p className="text-sm text-muted-foreground">{request.purpose}</p>
+                      </div>
+                      <Separator />
+                      <div>
+                        <p className="text-sm font-medium">Contact Phone</p>
+                        <p className="text-sm text-muted-foreground font-mono">{request.contact_phone}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
