@@ -44,7 +44,7 @@ export const Header = () => {
           </Button>
           {user && (
             <>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/my-items')}>
                 My Items
               </Button>
               <Button variant="ghost" size="sm">
@@ -84,7 +84,7 @@ export const Header = () => {
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>My Listings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/my-items')}>My Listings</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
