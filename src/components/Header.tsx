@@ -10,6 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -47,9 +53,18 @@ export const Header = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate('/my-items')}>
                 My Items
               </Button>
-              <Button variant="ghost" size="sm">
-                Messages
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="cursor-not-allowed opacity-60">
+                      Messages
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Coming Soon</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button 
                 size="sm" 
                 className="ml-2"
