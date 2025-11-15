@@ -32,6 +32,9 @@ export default function Auth() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   // Check if user came from password reset email
   useEffect(() => {
@@ -95,9 +98,9 @@ export default function Auth() {
     const fullName = formData.get('signup-name') as string;
     const dormArea = formData.get('signup-dorm') as string;
 
-    // Validate OSU email
+    // Validate OSU email (only @osu.edu, not other .edu)
     if (!email.endsWith('@osu.edu')) {
-      setError('Please use your OSU email address (@osu.edu)');
+      setError('Please use your OSU email address (@osu.edu). Other .edu emails are not accepted.');
       setLoading(false);
       return;
     }
@@ -136,11 +139,13 @@ export default function Auth() {
       } else {
         setError(error.message);
       }
+      setLoading(false);
     } else {
-      navigate('/');
+      // Show verification form
+      setVerificationEmail(email);
+      setShowVerification(true);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -174,6 +179,44 @@ export default function Auth() {
     setResetLoading(false);
   };
 
+  const handleVerifyEmail = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: verificationEmail,
+      token: verificationCode,
+      type: 'signup',
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    setError('');
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: verificationEmail,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setError('');
+      // Show success message using Alert instead of error
+    }
+
+    setLoading(false);
+  };
+
   const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -204,6 +247,71 @@ export default function Auth() {
 
     setLoading(false);
   };
+
+  // Show email verification form after sign-up
+  if (showVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">
+              <Heart className="h-8 w-8 text-white fill-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground">Verify Your Email</h1>
+            <p className="text-muted-foreground mt-2">Check your OSU email for the verification code</p>
+          </div>
+
+          <Card className="border-border/50 shadow-elegant">
+            <CardHeader>
+              <CardTitle>Enter Verification Code</CardTitle>
+              <CardDescription>We sent a 6-digit code to {verificationEmail}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleVerifyEmail} className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="verification-code">Verification Code</Label>
+                  <Input
+                    id="verification-code"
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    required
+                    disabled={loading}
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Verify Email'}
+                </Button>
+
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="text-sm"
+                  >
+                    Resend Code
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // Show password reset form if user came from email link
   if (isResettingPassword) {
@@ -432,7 +540,7 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">OSU Email</Label>
+                    <Label htmlFor="signup-email">OSU Email (Only @osu.edu)</Label>
                     <Input
                       id="signup-email"
                       name="signup-email"
@@ -440,7 +548,12 @@ export default function Auth() {
                       placeholder="name.1@osu.edu"
                       required
                       disabled={loading}
+                      pattern="[a-zA-Z0-9._%+-]+@osu\.edu$"
+                      title="Must be a valid @osu.edu email address"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Only OSU email addresses are accepted. Other .edu emails will not work.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
