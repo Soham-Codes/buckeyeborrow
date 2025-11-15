@@ -278,6 +278,14 @@ export default function Auth() {
           </div>
           <h1 className="text-3xl font-bold text-foreground">Buckeye Borrow</h1>
           <p className="text-muted-foreground mt-2">OSU Community Sharing Platform</p>
+          
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="mt-4"
+          >
+            Browse Items Without Signing In
+          </Button>
         </div>
 
         <Card className="border-border/50 shadow-elegant">
