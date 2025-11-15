@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
-export const Hero = () => {
+interface HeroProps {
+  onSearchClick: () => void;
+}
+
+export const Hero = ({ onSearchClick }: HeroProps) => {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-light to-accent py-20 px-4">
       <div className="container mx-auto max-w-6xl relative z-10">
@@ -14,7 +18,11 @@ export const Hero = () => {
             Connect with OSU students nearby to borrow what you need and share what you have.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 bg-muted hover:bg-muted/80 text-foreground"
+              onClick={onSearchClick}
+            >
               <Search className="mr-2 h-5 w-5" />
               Browse Items
             </Button>

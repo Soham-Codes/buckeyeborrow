@@ -12,6 +12,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Items");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [detailsPanelOpen, setDetailsPanelOpen] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   const handleItemClick = (itemId: string) => {
     setSelectedItemId(itemId);
@@ -32,12 +33,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Hero />
+      <div className={`transition-all duration-700 ease-in-out ${searchExpanded ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+        <Hero onSearchClick={() => setSearchExpanded(true)} />
+      </div>
       <SearchBar 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
+        expanded={searchExpanded}
       />
       <ItemGrid 
         searchQuery={searchQuery}
