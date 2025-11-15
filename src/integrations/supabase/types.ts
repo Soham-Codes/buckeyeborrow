@@ -107,6 +107,80 @@ export type Database = {
         }
         Relationships: []
       }
+      request_comments: {
+        Row: {
+          comment_text: string
+          commenter_id: string
+          created_at: string | null
+          id: string
+          listing_number: string | null
+          request_id: string
+        }
+        Insert: {
+          comment_text: string
+          commenter_id: string
+          created_at?: string | null
+          id?: string
+          listing_number?: string | null
+          request_id: string
+        }
+        Update: {
+          comment_text?: string
+          commenter_id?: string
+          created_at?: string | null
+          id?: string
+          listing_number?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requests: {
+        Row: {
+          additional_details: string | null
+          created_at: string | null
+          id: string
+          item_name: string
+          needed_by_date: string
+          purpose: string
+          request_number: string
+          requester_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_details?: string | null
+          created_at?: string | null
+          id?: string
+          item_name: string
+          needed_by_date: string
+          purpose: string
+          request_number: string
+          requester_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_details?: string | null
+          created_at?: string | null
+          id?: string
+          item_name?: string
+          needed_by_date?: string
+          purpose?: string
+          request_number?: string
+          requester_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -133,6 +207,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_request_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
