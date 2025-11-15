@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Header } from '@/components/Header';
-import { AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ListItem() {
@@ -154,7 +154,20 @@ export default function ListItem() {
               {/* Item Number Display */}
               <div className="bg-primary/10 border-2 border-primary rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground mb-1">Your Item Number</p>
-                <p className="text-3xl font-bold text-primary tracking-wider">{submittedItem.item_number}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-3xl font-bold text-primary tracking-wider">{submittedItem.item_number}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(submittedItem.item_number);
+                      toast.success('Item number copied to clipboard!');
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">Share this number so people can easily find your listing</p>
               </div>
 
