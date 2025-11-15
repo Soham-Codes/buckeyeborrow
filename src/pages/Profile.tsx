@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { CheckCircle2, Package, BookOpen, Plus, List, Edit, LogOut, AlertCircle, Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
+import { CheckCircle2, Package, BookOpen, Plus, List, Edit, LogOut, AlertCircle, Settings as SettingsIcon, Moon, Sun, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Profile {
@@ -33,6 +33,14 @@ interface Item {
   photo_url: string | null;
   status: string;
   item_number: string;
+}
+
+interface UserPreferences {
+  email_notifications: boolean;
+  borrow_request_notifications: boolean;
+  return_reminders: boolean;
+  profile_visibility: boolean;
+  show_email: boolean;
 }
 
 // Sample borrowed items data
@@ -68,6 +76,20 @@ export default function Profile() {
   const [editBio, setEditBio] = useState('');
   const [editDormArea, setEditDormArea] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Photo upload state
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  
+  // User preferences state
+  const [preferences, setPreferences] = useState<UserPreferences>({
+    email_notifications: true,
+    borrow_request_notifications: true,
+    return_reminders: true,
+    profile_visibility: true,
+    show_email: false
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,6 +101,7 @@ export default function Profile() {
     if (user) {
       fetchProfile();
       fetchLendingItems();
+      fetchUserPreferences();
     }
   }, [user]);
 
@@ -121,11 +144,100 @@ export default function Profile() {
     navigate('/auth');
   };
 
+  const fetchUserPreferences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setPreferences({
+          email_notifications: data.email_notifications,
+          borrow_request_notifications: data.borrow_request_notifications,
+          return_reminders: data.return_reminders,
+          profile_visibility: data.profile_visibility,
+          show_email: data.show_email
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching preferences:', error);
+    }
+  };
+
   const handleEditProfile = () => {
     setEditFullName(profile?.full_name || '');
     setEditBio(profile?.bio || '');
     setEditDormArea(profile?.dorm_area || '');
+    setPhotoPreview(profile?.profile_photo_url || null);
+    setPhotoFile(null);
     setEditDialogOpen(true);
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Photo must be less than 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
+  const uploadProfilePhoto = async (): Promise<string | null> => {
+    if (!photoFile || !user) return null;
+
+    try {
+      setUploadingPhoto(true);
+      
+      // Delete old photo if exists
+      if (profile?.profile_photo_url) {
+        const oldPath = profile.profile_photo_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('profile-photos')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new photo
+      const fileExt = photoFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(filePath, photoFile);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Failed to upload photo');
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -136,12 +248,23 @@ export default function Profile() {
 
     setSaving(true);
     try {
+      let photoUrl = profile?.profile_photo_url;
+      
+      // Upload photo if changed
+      if (photoFile) {
+        const uploadedUrl = await uploadProfilePhoto();
+        if (uploadedUrl) {
+          photoUrl = uploadedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: editFullName,
           bio: editBio,
-          dorm_area: editDormArea
+          dorm_area: editDormArea,
+          profile_photo_url: photoUrl
         })
         .eq('id', user?.id);
 
@@ -151,16 +274,59 @@ export default function Profile() {
         ...profile!,
         full_name: editFullName,
         bio: editBio,
-        dorm_area: editDormArea
+        dorm_area: editDormArea,
+        profile_photo_url: photoUrl
       });
 
       toast.success('Profile updated successfully!');
       setEditDialogOpen(false);
+      setPhotoFile(null);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const updatePreference = async (key: keyof UserPreferences, value: boolean) => {
+    try {
+      const newPreferences = { ...preferences, [key]: value };
+      setPreferences(newPreferences);
+
+      // Check if preferences exist
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('user_preferences')
+          .update({ [key]: value })
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: user?.id,
+            ...newPreferences
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success('Preference updated');
+    } catch (error) {
+      console.error('Error updating preference:', error);
+      toast.error('Failed to update preference');
+      // Revert on error
+      setPreferences(preferences);
     }
   };
 
@@ -437,7 +603,11 @@ export default function Profile() {
                       Receive email updates about your borrowing activity
                     </p>
                   </div>
-                  <Switch id="email-notifications" defaultChecked />
+                  <Switch 
+                    id="email-notifications" 
+                    checked={preferences.email_notifications}
+                    onCheckedChange={(checked) => updatePreference('email_notifications', checked)}
+                  />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -447,7 +617,11 @@ export default function Profile() {
                       Get notified when someone requests to borrow your items
                     </p>
                   </div>
-                  <Switch id="borrow-requests" defaultChecked />
+                  <Switch 
+                    id="borrow-requests" 
+                    checked={preferences.borrow_request_notifications}
+                    onCheckedChange={(checked) => updatePreference('borrow_request_notifications', checked)}
+                  />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -457,7 +631,11 @@ export default function Profile() {
                       Receive reminders about upcoming item returns
                     </p>
                   </div>
-                  <Switch id="return-reminders" defaultChecked />
+                  <Switch 
+                    id="return-reminders" 
+                    checked={preferences.return_reminders}
+                    onCheckedChange={(checked) => updatePreference('return_reminders', checked)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -476,7 +654,11 @@ export default function Profile() {
                       Allow other users to view your profile
                     </p>
                   </div>
-                  <Switch id="profile-visibility" defaultChecked />
+                  <Switch 
+                    id="profile-visibility" 
+                    checked={preferences.profile_visibility}
+                    onCheckedChange={(checked) => updatePreference('profile_visibility', checked)}
+                  />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -486,7 +668,11 @@ export default function Profile() {
                       Display your email on your public profile
                     </p>
                   </div>
-                  <Switch id="show-email" />
+                  <Switch 
+                    id="show-email" 
+                    checked={preferences.show_email}
+                    onCheckedChange={(checked) => updatePreference('show_email', checked)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -521,6 +707,46 @@ export default function Profile() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {/* Profile Photo Upload */}
+              <div className="space-y-2">
+                <Label>Profile Photo</Label>
+                {photoPreview ? (
+                  <div className="relative w-32 h-32 mx-auto">
+                    <img
+                      src={photoPreview}
+                      alt="Profile preview"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-0 right-0 rounded-full"
+                      onClick={removePhoto}
+                      disabled={saving || uploadingPhoto}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <Label htmlFor="profilePhoto" className="cursor-pointer text-primary hover:underline">
+                      Upload profile photo
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">Max 5MB</p>
+                    <Input
+                      id="profilePhoto"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                      disabled={saving || uploadingPhoto}
+                    />
+                  </div>
+                )}
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
@@ -528,6 +754,7 @@ export default function Profile() {
                   value={editFullName}
                   onChange={(e) => setEditFullName(e.target.value)}
                   placeholder="Enter your full name"
+                  disabled={saving || uploadingPhoto}
                 />
               </div>
               <div className="space-y-2">
@@ -559,12 +786,12 @@ export default function Profile() {
               <Button
                 variant="outline"
                 onClick={() => setEditDialogOpen(false)}
-                disabled={saving}
+                disabled={saving || uploadingPhoto}
               >
                 Cancel
               </Button>
-              <Button onClick={handleSaveProfile} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
+              <Button onClick={handleSaveProfile} disabled={saving || uploadingPhoto}>
+                {uploadingPhoto ? 'Uploading...' : saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </DialogContent>

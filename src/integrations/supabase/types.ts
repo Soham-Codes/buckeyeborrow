@@ -234,6 +234,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          borrow_request_notifications: boolean | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          profile_visibility: boolean | null
+          return_reminders: boolean | null
+          show_email: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          borrow_request_notifications?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          profile_visibility?: boolean | null
+          return_reminders?: boolean | null
+          show_email?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          borrow_request_notifications?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          profile_visibility?: boolean | null
+          return_reminders?: boolean | null
+          show_email?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
