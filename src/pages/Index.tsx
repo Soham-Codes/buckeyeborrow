@@ -3,12 +3,12 @@ import { Hero } from "@/components/Hero";
 import { SearchBar } from "@/components/SearchBar";
 import { ItemGrid } from "@/components/ItemGrid";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Index = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { loading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Items");
 
   if (loading) {
     return (
@@ -25,8 +25,16 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero />
-      <SearchBar />
-      <ItemGrid />
+      <SearchBar 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+      />
+      <ItemGrid 
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
+      />
     </div>
   );
 };
