@@ -9,11 +9,15 @@ interface ItemCardProps {
   distance: string;
   category: string;
   itemNumber: string;
+  onClick?: (id: string) => void;
 }
 
-export const ItemCard = ({ id, title, image, distance, category, itemNumber }: ItemCardProps) => {
+export const ItemCard = ({ id, title, image, distance, category, itemNumber, onClick }: ItemCardProps) => {
   return (
-    <Card className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl border-border">
+    <Card 
+      className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl border-border"
+      onClick={() => onClick?.(id)}
+    >
       <div className="aspect-square overflow-hidden bg-muted">
         <img 
           src={image} 
