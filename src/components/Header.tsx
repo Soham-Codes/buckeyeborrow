@@ -47,11 +47,26 @@ export const Header = () => {
               <Button variant="ghost" size="sm">
                 Messages
               </Button>
-              <Button size="sm" className="ml-2">
+              <Button 
+                size="sm" 
+                className="ml-2"
+                onClick={() => navigate('/list-item')}
+              >
                 <Plus className="h-4 w-4 mr-1" />
                 List Item
               </Button>
             </>
+          )}
+          
+          {!user && (
+            <Button 
+              size="sm" 
+              className="ml-2"
+              onClick={() => navigate('/auth')}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              List Item
+            </Button>
           )}
           
           {user ? (
