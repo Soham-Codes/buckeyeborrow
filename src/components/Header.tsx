@@ -36,8 +36,11 @@ export const Header = () => {
         </div>
 
         <nav className="hidden md:flex items-center gap-2">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             Browse
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/community')}>
+            Community
           </Button>
           {user && (
             <>
