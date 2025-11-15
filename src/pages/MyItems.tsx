@@ -112,7 +112,7 @@ export default function MyItems() {
         .from('borrow_requests')
         .select('*')
         .eq('item_id', itemId)
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
 
