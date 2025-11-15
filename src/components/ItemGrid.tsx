@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ItemCard } from "./ItemCard";
+import { FilterOptions } from "./SearchBar";
 
 interface Item {
   id: string;
@@ -12,15 +13,18 @@ interface Item {
   status: string;
   item_number: string;
   owner_id: string;
+  cost_type: string;
+  max_borrow_duration: string;
 }
 
 interface ItemGridProps {
   searchQuery: string;
   selectedCategory: string;
+  filters: FilterOptions;
   onItemClick: (itemId: string) => void;
 }
 
-export const ItemGrid = ({ searchQuery, selectedCategory, onItemClick }: ItemGridProps) => {
+export const ItemGrid = ({ searchQuery, selectedCategory, filters, onItemClick }: ItemGridProps) => {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +37,6 @@ export const ItemGrid = ({ searchQuery, selectedCategory, onItemClick }: ItemGri
       const { data, error } = await supabase
         .from('items')
         .select('*')
-        .eq('status', 'available')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -45,7 +48,7 @@ export const ItemGrid = ({ searchQuery, selectedCategory, onItemClick }: ItemGri
     }
   };
 
-  // Filter items based on search query and category
+  // Filter items based on search query, category, and filters
   const filteredItems = items.filter((item) => {
     const matchesSearch = 
       searchQuery === '' ||
@@ -58,7 +61,23 @@ export const ItemGrid = ({ searchQuery, selectedCategory, onItemClick }: ItemGri
       selectedCategory === 'All Items' || 
       item.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
+    const matchesCampusArea = 
+      filters.campusArea === 'all' || 
+      item.campus_area === filters.campusArea;
+
+    const matchesCostType = 
+      filters.costType === 'all' || 
+      item.cost_type === filters.costType;
+
+    const matchesStatus = 
+      filters.status === 'all' || 
+      item.status === filters.status;
+
+    const matchesDuration = 
+      filters.maxBorrowDuration === 'all' || 
+      item.max_borrow_duration === filters.maxBorrowDuration;
+
+    return matchesSearch && matchesCategory && matchesCampusArea && matchesCostType && matchesStatus && matchesDuration;
   });
 
   if (loading) {
