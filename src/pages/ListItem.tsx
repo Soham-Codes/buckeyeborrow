@@ -150,6 +150,14 @@ export default function ListItem() {
                   className="w-full h-48 object-cover rounded-lg"
                 />
               )}
+              
+              {/* Item Number Display */}
+              <div className="bg-primary/10 border-2 border-primary rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-1">Your Item Number</p>
+                <p className="text-3xl font-bold text-primary tracking-wider">{submittedItem.item_number}</p>
+                <p className="text-xs text-muted-foreground mt-2">Share this number so people can easily find your listing</p>
+              </div>
+
               <div className="space-y-2">
                 <div>
                   <span className="font-semibold">Item:</span> {submittedItem.item_name}

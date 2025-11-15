@@ -25,6 +25,7 @@ export type Database = {
           created_at: string | null
           id: string
           item_name: string
+          item_number: string
           max_borrow_duration: string
           owner_id: string
           photo_url: string | null
@@ -43,6 +44,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           item_name: string
+          item_number?: string
           max_borrow_duration: string
           owner_id: string
           photo_url?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           item_name?: string
+          item_number?: string
           max_borrow_duration?: string
           owner_id?: string
           photo_url?: string | null
@@ -207,6 +210,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_item_number: { Args: never; Returns: string }
       generate_request_number: { Args: never; Returns: string }
       has_role: {
         Args: {
