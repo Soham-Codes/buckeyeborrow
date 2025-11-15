@@ -38,12 +38,17 @@ export const SearchBar = ({
     }
   }, []);
 
-  const handleSearch = (query: string) => {
-    onSearchChange(query);
+  const saveToHistory = (query: string) => {
     if (query.trim() && !searchHistory.includes(query.trim())) {
       const newHistory = [query.trim(), ...searchHistory].slice(0, 10);
       setSearchHistory(newHistory);
       localStorage.setItem("searchHistory", JSON.stringify(newHistory));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      saveToHistory(searchQuery);
     }
   };
 
@@ -66,7 +71,8 @@ export const SearchBar = ({
                 placeholder="Search by item name, category, or item number..." 
                 className="pl-12 h-12 text-base"
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={handleKeyDown}
                 autoFocus={expanded}
               />
             </div>
@@ -83,7 +89,10 @@ export const SearchBar = ({
                     key={index}
                     className="group flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 text-sm cursor-pointer transition-colors"
                   >
-                    <span onClick={() => handleSearch(item)} className="flex-1">{item}</span>
+                    <span onClick={() => {
+                      onSearchChange(item);
+                      saveToHistory(item);
+                    }} className="flex-1">{item}</span>
                     <X 
                       className="h-3 w-3 text-muted-foreground hover:text-foreground transition-colors" 
                       onClick={(e) => {
