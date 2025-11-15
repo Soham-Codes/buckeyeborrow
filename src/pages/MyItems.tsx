@@ -20,6 +20,7 @@ interface Item {
   status: string;
   cost_type: string;
   created_at: string;
+  item_number: string;
 }
 
 export default function MyItems() {
@@ -140,6 +141,11 @@ export default function MyItems() {
                     </div>
                   </CardHeader>
                   <CardContent>
+                    <div className="bg-primary/10 border border-primary rounded-md px-3 py-2 mb-4">
+                      <p className="text-xs text-muted-foreground text-center">Item Number</p>
+                      <p className="text-lg font-bold text-primary text-center tracking-wider">{item.item_number}</p>
+                    </div>
+                    
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       <p><strong>Campus Area:</strong> {item.campus_area}</p>
                       <p><strong>Pickup:</strong> {item.pickup_location}</p>
