@@ -1,17 +1,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 interface ItemCardProps {
+  id: string;
   title: string;
   image: string;
   distance: string;
-  rating: number;
-  lender: string;
   category: string;
+  itemNumber: string;
 }
 
-export const ItemCard = ({ title, image, distance, rating, lender, category }: ItemCardProps) => {
+export const ItemCard = ({ id, title, image, distance, category, itemNumber }: ItemCardProps) => {
   return (
     <Card className="group cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl border-border">
       <div className="aspect-square overflow-hidden bg-muted">
@@ -33,12 +33,8 @@ export const ItemCard = ({ title, image, distance, rating, lender, category }: I
             <MapPin className="h-4 w-4 mr-1 text-primary" />
             <span>{distance}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 text-sm">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="font-medium text-foreground">{rating}</span>
-              <span className="text-muted-foreground">· {lender}</span>
-            </div>
+          <div className="text-xs text-muted-foreground">
+            Item #<span className="font-mono font-semibold">{itemNumber}</span>
           </div>
         </div>
       </CardContent>
