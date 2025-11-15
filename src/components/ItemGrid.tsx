@@ -92,7 +92,7 @@ export const ItemGrid = ({ searchQuery, selectedCategory }: ItemGridProps) => {
               key={item.id}
               id={item.id}
               title={item.item_name}
-              image={item.photo_url || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=500&h=500&fit=crop'}
+              image={item.photo_url || '/images/no-image-placeholder.png'}
               distance={item.campus_area}
               category={item.category}
               itemNumber={item.item_number}
