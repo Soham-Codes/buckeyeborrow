@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +22,13 @@ export default function ListItem() {
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submittedItem, setSubmittedItem] = useState<any>(null);
+  
+  // Redirect to auth if not signed in, with return path
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth', { state: { returnTo: '/list-item' } });
+    }
+  }, [user, navigate]);
   
   // Form state
   const [itemName, setItemName] = useState('');

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -39,6 +40,9 @@ export default function Auth() {
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [hasTypedEmail, setHasTypedEmail] = useState(false);
 
+  // Get return path from location state
+  const returnTo = (location.state as any)?.returnTo || '/';
+
   // Check if user came from password reset email
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -51,9 +55,9 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !isResettingPassword) {
-      navigate('/');
+      navigate(returnTo);
     }
-  }, [user, navigate, isResettingPassword]);
+  }, [user, navigate, isResettingPassword, returnTo]);
 
   const validateEmail = (email: string) => {
     const isValid = email.endsWith('@osu.edu') || email.endsWith('@buckeyemail.osu.edu');
@@ -95,7 +99,7 @@ export default function Auth() {
         setError(error.message);
       }
     } else {
-      navigate('/');
+      navigate(returnTo);
     }
 
     setLoading(false);
@@ -209,7 +213,7 @@ export default function Auth() {
       setError(error.message);
       setLoading(false);
     } else {
-      navigate('/');
+      navigate(returnTo);
     }
   };
 
@@ -256,8 +260,8 @@ export default function Auth() {
     if (error) {
       setError(error.message);
     } else {
-      // Clear the mode parameter and redirect to home
-      navigate('/', { replace: true });
+      // Clear the mode parameter and redirect to return path
+      navigate(returnTo, { replace: true });
     }
 
     setLoading(false);
