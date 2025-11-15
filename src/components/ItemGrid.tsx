@@ -17,9 +17,10 @@ interface Item {
 interface ItemGridProps {
   searchQuery: string;
   selectedCategory: string;
+  onItemClick: (itemId: string) => void;
 }
 
-export const ItemGrid = ({ searchQuery, selectedCategory }: ItemGridProps) => {
+export const ItemGrid = ({ searchQuery, selectedCategory, onItemClick }: ItemGridProps) => {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,6 +97,7 @@ export const ItemGrid = ({ searchQuery, selectedCategory }: ItemGridProps) => {
               distance={item.campus_area}
               category={item.category}
               itemNumber={item.item_number}
+              onClick={onItemClick}
             />
           ))}
         </div>
