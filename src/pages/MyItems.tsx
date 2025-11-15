@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Package, Inbox } from 'lucide-react';
+import { Trash2, Package, Inbox, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Item {
@@ -161,6 +161,50 @@ export default function MyItems() {
     } catch (error) {
       console.error('Error deleting item:', error);
       toast.error('Failed to delete item');
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('borrow_requests')
+        .update({ status: 'approved' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast.success('Request accepted successfully');
+      
+      // Refresh the requests list
+      if (selectedItem) {
+        await fetchItemRequests(selectedItem.id);
+        await fetchRequestCounts([selectedItem.id]);
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      toast.error('Failed to accept request');
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('borrow_requests')
+        .update({ status: 'rejected' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast.success('Request rejected');
+      
+      // Refresh the requests list
+      if (selectedItem) {
+        await fetchItemRequests(selectedItem.id);
+        await fetchRequestCounts([selectedItem.id]);
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast.error('Failed to reject request');
     }
   };
 
@@ -352,6 +396,29 @@ export default function MyItems() {
                         <p className="text-sm font-medium">Contact Phone</p>
                         <p className="text-sm text-muted-foreground font-mono">{request.contact_phone}</p>
                       </div>
+                      
+                      {request.status === 'pending' && (
+                        <>
+                          <Separator />
+                          <div className="flex gap-2 pt-2">
+                            <Button 
+                              className="flex-1" 
+                              onClick={() => handleAcceptRequest(request.id)}
+                            >
+                              <Check className="h-4 w-4 mr-2" />
+                              Accept
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => handleRejectRequest(request.id)}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Reject
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
