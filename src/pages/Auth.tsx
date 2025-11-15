@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, AlertCircle } from 'lucide-react';
+import { Heart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -17,13 +24,30 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+  // Check if user came from password reset email
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    if (mode === 'reset') {
+      setIsResettingPassword(true);
+    }
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !isResettingPassword) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, isResettingPassword]);
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -119,6 +143,127 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError('');
+    setResetSuccess(false);
+
+    // Validate OSU email
+    if (!resetEmail.endsWith('@osu.edu')) {
+      setResetError('Please use your OSU email address (@osu.edu)');
+      setResetLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth?mode=reset`,
+    });
+
+    if (error) {
+      setResetError(error.message);
+    } else {
+      setResetSuccess(true);
+    }
+
+    setResetLoading(false);
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      // Clear the mode parameter and redirect to home
+      navigate('/', { replace: true });
+    }
+
+    setLoading(false);
+  };
+
+  // Show password reset form if user came from email link
+  if (isResettingPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-4">
+              <Heart className="h-8 w-8 text-white fill-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground">Reset Password</h1>
+            <p className="text-muted-foreground mt-2">Enter your new password</p>
+          </div>
+
+          <Card className="border-border/50 shadow-elegant">
+            <CardHeader>
+              <CardTitle>Create New Password</CardTitle>
+              <CardDescription>Choose a strong password for your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    minLength={6}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    minLength={6}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Updating...' : 'Update Password'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="w-full max-w-md">
@@ -177,6 +322,63 @@ export default function Auth() {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </Button>
+
+                  <div className="text-center mt-4">
+                    <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="link" 
+                          className="text-sm text-muted-foreground hover:text-primary"
+                          type="button"
+                        >
+                          Forgot password?
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset your password</DialogTitle>
+                          <DialogDescription>
+                            Enter your OSU email address and we'll send you a link to reset your password.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        {resetSuccess ? (
+                          <Alert className="border-green-500/50 bg-green-500/10">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            <AlertDescription className="text-green-700 dark:text-green-400">
+                              Password reset email sent! Check your inbox for instructions.
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <form onSubmit={handleForgotPassword} className="space-y-4">
+                            {resetError && (
+                              <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>{resetError}</AlertDescription>
+                              </Alert>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label htmlFor="reset-email">OSU Email</Label>
+                              <Input
+                                id="reset-email"
+                                type="email"
+                                placeholder="name.1@osu.edu"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                required
+                                disabled={resetLoading}
+                              />
+                            </div>
+
+                            <Button type="submit" className="w-full" disabled={resetLoading}>
+                              {resetLoading ? 'Sending...' : 'Send reset link'}
+                            </Button>
+                          </form>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </form>
               </TabsContent>
 
