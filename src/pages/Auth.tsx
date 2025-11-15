@@ -35,6 +35,9 @@ export default function Auth() {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [isEmailValid, setIsEmailValid] = useState(true);
+  const [hasTypedEmail, setHasTypedEmail] = useState(false);
 
   // Check if user came from password reset email
   useEffect(() => {
@@ -51,6 +54,18 @@ export default function Auth() {
       navigate('/');
     }
   }, [user, navigate, isResettingPassword]);
+
+  const validateEmail = (email: string) => {
+    const isValid = email.endsWith('@osu.edu') || email.endsWith('@buckeyemail.osu.edu');
+    return isValid;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setSignupEmail(email);
+    setHasTypedEmail(true);
+    setIsEmailValid(validateEmail(email));
+  };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,15 +107,15 @@ export default function Auth() {
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('signup-email') as string;
+    const email = signupEmail;
     const password = formData.get('signup-password') as string;
     const confirmPassword = formData.get('signup-confirm-password') as string;
     const fullName = formData.get('signup-name') as string;
     const dormArea = formData.get('signup-dorm') as string;
 
-    // Validate OSU email (only @osu.edu, not other .edu)
-    if (!email.endsWith('@osu.edu')) {
-      setError('Please use your OSU email address (@osu.edu). Other .edu emails are not accepted.');
+    // Validate OSU email (only @osu.edu or @buckeyemail.osu.edu)
+    if (!email.endsWith('@osu.edu') && !email.endsWith('@buckeyemail.osu.edu')) {
+      setError('Please use your OSU email address (@osu.edu or @buckeyemail.osu.edu). Other emails are not accepted.');
       setLoading(false);
       return;
     }
@@ -540,20 +555,35 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">OSU Email (Only @osu.edu)</Label>
-                    <Input
-                      id="signup-email"
-                      name="signup-email"
-                      type="email"
-                      placeholder="name.1@osu.edu"
-                      required
-                      disabled={loading}
-                      pattern="[a-zA-Z0-9._%+-]+@osu\.edu$"
-                      title="Must be a valid @osu.edu email address"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Only OSU email addresses are accepted. Other .edu emails will not work.
-                    </p>
+                    <Label htmlFor="signup-email">OSU Email</Label>
+                    <div className="relative">
+                      <Input
+                        id="signup-email"
+                        name="signup-email"
+                        type="email"
+                        placeholder="name.1@osu.edu or name.1@buckeyemail.osu.edu"
+                        required
+                        disabled={loading}
+                        value={signupEmail}
+                        onChange={handleEmailChange}
+                        className={hasTypedEmail && !isEmailValid && signupEmail ? 'border-destructive pr-10' : ''}
+                      />
+                      {hasTypedEmail && !isEmailValid && signupEmail && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        </div>
+                      )}
+                    </div>
+                    {hasTypedEmail && !isEmailValid && signupEmail && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        Invalid email - Only @osu.edu or @buckeyemail.osu.edu addresses are accepted
+                      </p>
+                    )}
+                    {(!hasTypedEmail || isEmailValid || !signupEmail) && (
+                      <p className="text-xs text-muted-foreground">
+                        Only OSU email addresses (@osu.edu or @buckeyemail.osu.edu) are accepted
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -580,7 +610,11 @@ export default function Auth() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading || (hasTypedEmail && !isEmailValid)}
+                  >
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
