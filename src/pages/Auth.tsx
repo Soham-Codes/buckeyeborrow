@@ -161,7 +161,12 @@ export default function Auth() {
     });
 
     if (error) {
-      setResetError(error.message);
+      // Better error messages for common issues
+      if (error.message.includes('hook')) {
+        setResetError('Email service is temporarily unavailable. Please try again in a few minutes or contact support.');
+      } else {
+        setResetError(error.message);
+      }
     } else {
       setResetSuccess(true);
     }
