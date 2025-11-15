@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from 'next-themes';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, Package, BookOpen, Plus, List, Edit, LogOut, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { CheckCircle2, Package, BookOpen, Plus, List, Edit, LogOut, AlertCircle, Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Profile {
@@ -53,6 +56,7 @@ const sampleBorrowedItems = [
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [lendingItems, setLendingItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,8 +191,22 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Basic User Info */}
-        <Card className="mb-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">My Account</h1>
+          <p className="text-muted-foreground">Manage your profile and settings</p>
+        </div>
+
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-8">
+            {/* Basic User Info */}
+            <Card>
           <CardHeader>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <Avatar className="h-24 w-24">
@@ -370,6 +388,128 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            {/* Appearance Settings */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Moon className="h-5 w-5 text-primary" />
+                  <CardTitle>Appearance</CardTitle>
+                </div>
+                <CardDescription>Customize how Buckeye Borrow looks for you</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="dark-mode" className="text-base">Dark Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Switch between light and dark themes
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Sun className="h-4 w-4 text-muted-foreground" />
+                    <Switch
+                      id="dark-mode"
+                      checked={theme === 'dark'}
+                      onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                    />
+                    <Moon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notification Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>Manage how you receive notifications</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="email-notifications" className="text-base">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email updates about your borrowing activity
+                    </p>
+                  </div>
+                  <Switch id="email-notifications" defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="borrow-requests" className="text-base">Borrow Requests</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone requests to borrow your items
+                    </p>
+                  </div>
+                  <Switch id="borrow-requests" defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="return-reminders" className="text-base">Return Reminders</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive reminders about upcoming item returns
+                    </p>
+                  </div>
+                  <Switch id="return-reminders" defaultChecked />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Privacy Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Privacy</CardTitle>
+                <CardDescription>Control your privacy and data preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="profile-visibility" className="text-base">Profile Visibility</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Allow other users to view your profile
+                    </p>
+                  </div>
+                  <Switch id="profile-visibility" defaultChecked />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show-email" className="text-base">Show Email</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Display your email on your public profile
+                    </p>
+                  </div>
+                  <Switch id="show-email" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Account Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Account</CardTitle>
+                <CardDescription>Manage your account settings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button variant="outline" className="w-full" onClick={handleEditProfile}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile Information
+                </Button>
+                <Button variant="destructive" className="w-full" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Edit Profile Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
