@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      items: {
+        Row: {
+          borrower_expectations: string | null
+          campus_area: string
+          category: string
+          condition_notes: string | null
+          contact_method: string
+          cost_type: string
+          created_at: string | null
+          id: string
+          item_name: string
+          max_borrow_duration: string
+          owner_id: string
+          photo_url: string | null
+          pickup_location: string
+          pickup_time_window: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          borrower_expectations?: string | null
+          campus_area: string
+          category: string
+          condition_notes?: string | null
+          contact_method: string
+          cost_type: string
+          created_at?: string | null
+          id?: string
+          item_name: string
+          max_borrow_duration: string
+          owner_id: string
+          photo_url?: string | null
+          pickup_location: string
+          pickup_time_window: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          borrower_expectations?: string | null
+          campus_area?: string
+          category?: string
+          condition_notes?: string | null
+          contact_method?: string
+          cost_type?: string
+          created_at?: string | null
+          id?: string
+          item_name?: string
+          max_borrow_duration?: string
+          owner_id?: string
+          photo_url?: string | null
+          pickup_location?: string
+          pickup_time_window?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           bio: string | null
